@@ -213,7 +213,7 @@ class WPSEO_Breadcrumbs {
 			} elseif ( is_404() ) {
 
 				if ( 0 !== get_query_var( 'year' ) || ( 0 !== get_query_var( 'monthnum' ) || 0 !== get_query_var( 'day' ) ) ) {
-					
+
 					if ( 'page' == $on_front && !is_home() ) {
 						if ( $blog_page && ( !isset( $options['breadcrumbs-blog-remove'] ) || !$options['breadcrumbs-blog-remove'] ) )
 							$links[] = array( 'id' => $blog_page );
@@ -252,10 +252,16 @@ class WPSEO_Breadcrumbs {
 				}
 			}
 		}
-
 		$links = apply_filters( 'wpseo_breadcrumb_links', $links );
 
-		$output = $this->create_breadcrumbs_string( $links );
+		// checks for display type array
+		if ($display == 'array') {
+			$output = $this->create_breadcrumbs_string( $links, '', '', 'array');
+			return $output;
+		} else {
+			$output = $this->create_breadcrumbs_string( $links );
+		}
+
 
 		if ( isset( $options['breadcrumbs-prefix'] ) && $options['breadcrumbs-prefix'] != "" )
 			$output = $options['breadcrumbs-prefix'] . " " . $output;
@@ -264,6 +270,7 @@ class WPSEO_Breadcrumbs {
 			echo $before . $output . $after;
 			return true;
 		} else {
+			// return $links;
 			return $before . $output . $after;
 		}
 	}
@@ -284,7 +291,7 @@ class WPSEO_Breadcrumbs {
 	 * @param string $element The wrapping element for each individual link.
 	 * @return string
 	 */
-	function create_breadcrumbs_string( $links, $wrapper = 'span', $element = 'span' ) {
+	function create_breadcrumbs_string( $links, $wrapper = 'span', $element = 'span', $display = 'true' ) {
 		global $paged;
 
 		$opt    = get_wpseo_options();
@@ -329,22 +336,30 @@ class WPSEO_Breadcrumbs {
 				$link['text'] = $archive_title;
 			}
 
-			$element     = esc_attr( apply_filters( 'wpseo_breadcrumb_single_link_wrapper', $element ) );
-			$link_output = '<' . $element . ' typeof="v:Breadcrumb">';
-			if ( isset( $link['url'] ) && ( $i < ( count( $links ) - 1 ) || $paged ) ) {
-				$link_output .= '<a href="' . esc_url( $link['url'] ) . '" rel="v:url" property="v:title">' . esc_html( $link['text'] ) . '</a>';
+			//checks display type == array
+			if ($display == 'array') {
+				$bc_array[] = $link;
 			} else {
-				if ( isset( $opt['breadcrumbs-boldlast'] ) && $opt['breadcrumbs-boldlast'] ) {
-					$link_output .= '<strong class="breadcrumb_last" property="v:title">' . esc_html( $link['text'] ) . '</strong>';
+				$element     = esc_attr( apply_filters( 'wpseo_breadcrumb_single_link_wrapper', $element ) );
+				$link_output = '<' . $element . ' typeof="v:Breadcrumb">';
+				if ( isset( $link['url'] ) && ( $i < ( count( $links ) - 1 ) || $paged ) ) {
+					$link_output .= '<a href="' . esc_url( $link['url'] ) . '" rel="v:url" property="v:title">' . esc_html( $link['text'] ) . '</a>';
 				} else {
-					$link_output .= '<span class="breadcrumb_last" property="v:title">' . esc_html( $link['text'] ) . '</span>';
+					if ( isset( $opt['breadcrumbs-boldlast'] ) && $opt['breadcrumbs-boldlast'] ) {
+						$link_output .= '<strong class="breadcrumb_last" property="v:title">' . esc_html( $link['text'] ) . '</strong>';
+					} else {
+						$link_output .= '<span class="breadcrumb_last" property="v:title">' . esc_html( $link['text'] ) . '</span>';
+					}
 				}
-			}
-			$link_output .= '</' . $element . '>';
+				$link_output .= '</' . $element . '>';
 
-			$link_sep = ( !empty( $output ) ? " $sep " : '' );
-			$link_output = apply_filters( 'wpseo_breadcrumb_single_link', $link_output, $link );
-			$output .= apply_filters( 'wpseo_breadcrumb_single_link_with_sep', $link_sep . $link_output, $link );
+				$link_sep = ( !empty( $output ) ? " $sep " : '' );
+				$link_output = apply_filters( 'wpseo_breadcrumb_single_link', $link_output, $link );
+				$output .= apply_filters( 'wpseo_breadcrumb_single_link_with_sep', $link_sep . $link_output, $link );
+			}
+		}
+		if ($display == 'array') {
+			return $bc_array;
 		}
 
 		$id = apply_filters( 'wpseo_breadcrumb_output_id', false );
